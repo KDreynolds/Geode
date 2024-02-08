@@ -8,34 +8,14 @@
 import Foundation
 
 enum GDALDatasetWrapperError: Error {
-    case datasetOpenFailed(String)
-    case bandReadFailed(String)
-    case invalidBand(String)
-    case writeFailed(String)
-    case statisticsComputationFailed(String)
-    case metadataOperationFailed(String)
-    case gdalError(GDALErr, String)
-
-    var localizedDescription: String {
-        switch self {
-        case .datasetOpenFailed(let message):
-            return "Failed to open dataset: \(message)"
-        case .bandReadFailed(let message):
-            return "Failed to read band data: \(message)"
-        case .invalidBand(let message):
-            return "Invalid band specified: \(message)"
-        case .writeFailed(let message):
-            return "Failed to write data: \(message)"
-        case .statisticsComputationFailed(let message):
-            return "Failed to compute statistics: \(message)"
-        case .metadataOperationFailed(let message):
-            return "Metadata operation failed: \(message)"
-        case .gdalError(let error, let message):
-            return "GDAL error \(error): \(message)"
-        }
-    }
+    case datasetOpenFailed
+    case bandReadFailed
+    case invalidBand
+    case writeFailed
+    case statisticsComputationFailed
+    case metadataOperationFailed
+    case gdalError(GDALErr)
 }
-
 
 class GDALDatasetWrapper {
     private var dataset: OpaquePointer?
