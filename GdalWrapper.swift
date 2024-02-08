@@ -129,3 +129,4 @@ class GDALDatasetWrapper {
         }
         return (min, max, mean, stdDev)
 }
+}
