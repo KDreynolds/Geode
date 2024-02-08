@@ -8,14 +8,34 @@
 import Foundation
 
 enum GDALDatasetWrapperError: Error {
-    case datasetOpenFailed
-    case bandReadFailed
-    case invalidBand
-    case writeFailed
-    case statisticsComputationFailed
-    case metadataOperationFailed
-    case gdalError(GDALErr)
+    case datasetOpenFailed(String)
+    case bandReadFailed(String)
+    case invalidBand(String)
+    case writeFailed(String)
+    case statisticsComputationFailed(String)
+    case metadataOperationFailed(String)
+    case gdalError(GDALErr, String)
+
+    var localizedDescription: String {
+        switch self {
+        case .datasetOpenFailed(let message):
+            return "Failed to open dataset: \(message)"
+        case .bandReadFailed(let message):
+            return "Failed to read band data: \(message)"
+        case .invalidBand(let message):
+            return "Invalid band specified: \(message)"
+        case .writeFailed(let message):
+            return "Failed to write data: \(message)"
+        case .statisticsComputationFailed(let message):
+            return "Failed to compute statistics: \(message)"
+        case .metadataOperationFailed(let message):
+            return "Metadata operation failed: \(message)"
+        case .gdalError(let error, let message):
+            return "GDAL error \(error): \(message)"
+        }
+    }
 }
+
 
 class GDALDatasetWrapper {
     private var dataset: OpaquePointer?
@@ -111,10 +131,80 @@ class GDALDatasetWrapper {
         return GDALSetGeoTransform(dataset, transform) == CE_None
     }
 
-    // Placeholder for spatial operations
     func reprojectDataset(to projection: String) throws {
-        // Implement reprojection logic here
-        // This is a conceptual placeholder
+        guard let sourceDataset = self.dataset else {
+            throw GDALDatasetWrapperError.datasetOpenFailed
+        }
+        
+        // Fetch the original projection
+        guard let sourceProjection = GDALGetProjectionRef(sourceDataset) else {
+            throw GDALDatasetWrapperError.metadataOperationFailed
+        }
+        
+        // Create a spatial reference object for the source and destination
+        let sourceSRS = OSRNewSpatialReference(sourceProjection)
+        let destinationSRS = OSRNewSpatialReference(nil)
+        
+        // Import the destination projection
+        guard OGRErrNone == OSRImportFromProj4(destinationSRS, projection) else {
+            OSRDestroySpatialReference(sourceSRS)
+            OSRDestroySpatialReference(destinationSRS)
+            throw GDALDatasetWrapperError.metadataOperationFailed
+        }
+        
+        // Create a transformation object
+        guard let transform = OCTNewCoordinateTransformation(sourceSRS, destinationSRS) else {
+            OSRDestroySpatialReference(sourceSRS)
+            OSRDestroySpatialReference(destinationSRS)
+            throw GDALDatasetWrapperError.metadataOperationFailed
+        }
+        
+        // Determine the destination geotransform and size
+        var destinationGeoTransform = [Double](repeating: 0, count: 6)
+        var destinationXSize: Int = 0
+        var destinationYSize: Int = 0
+        // Logic to compute destinationGeoTransform, destinationXSize, and destinationYSize goes here
+        
+        // Create a memory driver (for demonstration, you might want to use a file driver)
+        guard let driver = GDALGetDriverByName("MEM") else {
+            OCTDestroyCoordinateTransformation(transform)
+            OSRDestroySpatialReference(sourceSRS)
+            OSRDestroySpatialReference(destinationSRS)
+            throw GDALDatasetWrapperError.metadataOperationFailed
+        }
+        
+        // Create the destination dataset
+        guard let destinationDataset = GDALCreate(driver, "", destinationXSize, destinationYSize, 0, GDT_Unknown, nil) else {
+            OCTDestroyCoordinateTransformation(transform)
+            OSRDestroySpatialReference(sourceSRS)
+            OSRDestroySpatialReference(destinationSRS)
+            throw GDALDatasetWrapperError.datasetOpenFailed
+        }
+        
+        // Set the projection on the destination dataset
+        GDALSetProjection(destinationDataset, projection)
+        GDALSetGeoTransform(destinationDataset, &destinationGeoTransform)
+        
+        // Perform the reprojection
+        let warpOptions = GDALWarpAppOptionsNew(nil, nil)
+        let warpError = GDALReprojectImage(sourceDataset, sourceProjection, destinationDataset, projection, GRA_NearestNeighbour, 0, 0.1, nil, nil, warpOptions)
+        GDALWarpAppOptionsFree(warpOptions)
+        
+        if warpError != CE_None {
+            GDALClose(destinationDataset)
+            OCTDestroyCoordinateTransformation(transform)
+            OSRDestroySpatialReference(sourceSRS)
+            OSRDestroySpatialReference(destinationSRS)
+            throw GDALDatasetWrapperError.gdalError(warpError)
+        }
+        
+        // Cleanup
+        GDALClose(destinationDataset)
+        OCTDestroyCoordinateTransformation(transform)
+        OSRDestroySpatialReference(sourceSRS)
+        OSRDestroySpatialReference(destinationSRS)
+        
+        // Note: This example creates a new dataset in memory. You might want to modify it to write to a file or handle the dataset differently.
     }
 
     // Placeholder for computing statistics
