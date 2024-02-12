@@ -76,4 +76,5 @@ module GDAL [system] {
     header "/geode/gdal.framework/Headers/ogrsf_frmts.h"
     header "/geode/gdal.framework/Headers/rawdataset.h"
     header "/geode/gdal.framework/Headers/vrtdataset.h"
+    export *
 }
