@@ -4,3 +4,9 @@ xcuserdata/
 ## Xcode 8 and earlier
 *.xcscmblueprint
 *.xccheckout
+
+# Spotlight
+.DS_Store
+
+# GDAL build outputs
+gdal-build/
