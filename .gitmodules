@@ -4,3 +4,6 @@
 [submodule "Geode/ios-cmake"]
 	path = Geode/ios-cmake
 	url = https://github.com/leetal/ios-cmake.git
+[submodule "Geode/proj"]
+	path = Geode/proj
+	url = https://github.com/OSGeo/PROJ.git

@@ -1,9 +1,9 @@
 #!/bin/sh
 
-#  build-gdal-ios.sh
+#  build-proj-ios.sh
 #  Geode
 #
-#  Created by Jefferson Jones on 4/14/24.
+#  Adapted for PROJ by Kyle Reynolds on 4/14/24.
 #
 
 set -x
@@ -11,10 +11,9 @@ set -e
 
 # Fully qualified path to script directory
 SCRIPT_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-GDAL_SOURCES="$SCRIPT_PATH/../gdal"
+PROJ_SOURCES="$SCRIPT_PATH/../proj"
 TOOLCHAIN_FILE="$SCRIPT_PATH/../ios-cmake/ios.toolchain.cmake"
-BUILD_PATH="$SCRIPT_PATH/../gdal-build"
-PROJ_BUILD_PATH="$SCRIPT_PATH/../proj-build" # Adjusted to point to PROJ build artifacts
+BUILD_PATH="$SCRIPT_PATH/../proj-build"
 
 # Ensure CMake is installed.
 if ! command -v cmake &> /dev/null
@@ -23,19 +22,15 @@ then
     brew install cmake
 fi
 
-# Build PROJ first
-echo "Building PROJ..."
-"$SCRIPT_PATH/build-proj-ios.sh"
-
-# Now configure and build GDAL, ensuring it can find PROJ
+# Configure PROJ build for iOS
 cmake -B "$BUILD_PATH" -G Xcode \
     -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE" \
     -DPLATFORM=OS64COMBINED \
     -DENABLE_BITCODE=OFF \
     -DBUILD_SHARED_LIBS=OFF \
-    -DBUILD_APPS=OFF \
-    -DBUILD_PYTHON_BINDINGS=OFF \
-    -DPROJ_ROOT="$PROJ_BUILD_PATH" \ # Updated to use PROJ_BUILD_PATH
-    "$GDAL_SOURCES"
+    "$PROJ_SOURCES"
+
+# Build PROJ
+xcodebuild -project "$BUILD_PATH/PROJ.xcodeproj" -configuration Release -alltargets
 
 exit 0
