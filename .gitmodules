@@ -7,3 +7,6 @@
 [submodule "Geode/proj"]
 	path = Geode/proj
 	url = https://github.com/OSGeo/PROJ.git
+[submodule "Geode/sqlite"]
+	path = Geode/sqlite
+	url = https://github.com/sqlite/sqlite
